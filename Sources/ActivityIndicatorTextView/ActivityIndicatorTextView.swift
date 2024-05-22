@@ -41,13 +41,18 @@ public final class ActivityIndicatorTextView: UIView {
         var placeholderSize: CGSize {
             placeholder
                 .attributedString(font: font._fetchUIFont())
-                .size()
+                .boundingRect(
+                    with: CGSize(width: CGFloat.infinity, height: CGFloat.infinity),
+                    options: [.usesLineFragmentOrigin],
+                    context: nil
+                ).size
         }
         var dotsMaxSize: CGSize {
             var dots = [Content]()
             for i in 0 ..< dotsProvider.count {
                 dots.append(dotsProvider.dot(offset: i))
             }
+            print(dots)
             return dots
                 .map { $0.attributedString(font: font._fetchUIFont())
                     .boundingRect(
@@ -143,7 +148,7 @@ public final class ActivityIndicatorTextView: UIView {
         case `static`([Content])
         case dynamic(count: Int, closure: DotsProviderClosure)
         case `default`(DefaultDots)
-        case progress(start: String?, fill: String, empty: String, end: String?, lead: String?, reachLead: String?, count: Int)
+        case progress(start: String?, fill: String, empty: String, end: String?, lead: String?, reachLead: String?, extra: ((Int, Int) -> String)? = nil, count: Int)
 
         var count: Int {
             switch self {
@@ -153,7 +158,7 @@ public final class ActivityIndicatorTextView: UIView {
                 return count
             case let .default(defaultDots):
                 return defaultDots.staticDotsProvider.count
-            case let .progress(_, _, _, _, _, _, count: count):
+            case let .progress(_, _, _, _, _, _, _, count: count):
                 return count
             }
         }
@@ -166,7 +171,7 @@ public final class ActivityIndicatorTextView: UIView {
                 return closure(offset)
             case let .default(defaultDots):
                 return defaultDots.staticDotsProvider[offset]
-            case let .progress(start, fill, empty, end, lead, reachLead, count):
+            case let .progress(start, fill, empty, end, lead, reachLead, extra, count):
                 var contents: [String] = []
                 for index in 0 ..< count {
                     if offset > index {
@@ -186,6 +191,10 @@ public final class ActivityIndicatorTextView: UIView {
                 }
                 if let end {
                     contents.append(end)
+                }
+                if let extra {
+                    let extraString = extra(offset, count - 1)
+                    contents.append(extraString)
                 }
                 let target = contents.reduce("") { $0 + $1 }
                 return .string(target)
@@ -259,7 +268,11 @@ public final class ActivityIndicatorTextView: UIView {
     private var _placeholderSize: CGSize {
         placeholder
             .attributedString(font: font._fetchUIFont())
-            .size()
+            .boundingRect(
+                with: CGSize(width: CGFloat.infinity, height: CGFloat.infinity),
+                options: [.usesLineFragmentOrigin],
+                context: nil
+            ).size
     }
 
     private var _dotsMaxSize: CGSize {
@@ -326,11 +339,12 @@ public final class ActivityIndicatorTextView: UIView {
         let subviews = dotsPosition.isLeft ? subviews.reversed() : subviews
         let subviewSizes = dotsPosition.isLeft ? [_dotsMaxSize, _placeholderSize] : [_placeholderSize, _dotsMaxSize]
         let fristSize = dotsPosition.isLeft ? _dotsMaxSize : _placeholderSize
+        let maxHeight = subviewSizes.reduce(0.0, { $0 < $1.height ? $1.height : $0 })
         switch dotsPosition {
         case .leftCenter, .rightCenter:
-            startOriginY = center.y - fristSize.height / 2
+            startOriginY = maxHeight / 2 - fristSize.height / 2
         case .leftBottom, .rightBottom:
-            startOriginY = bounds.height - fristSize.height
+            startOriginY = maxHeight - fristSize.height
         case .leftTop, .rightTop:
             startOriginY = 0
         }
@@ -346,6 +360,7 @@ public final class ActivityIndicatorTextView: UIView {
     private func _setup() {
         addSubview(_placeholderLabel)
         addSubview(_edgeLabel)
+        _setCurrentStep(with: 0)
     }
 
     private func _setCurrentStep(with currentStep: Int) {
