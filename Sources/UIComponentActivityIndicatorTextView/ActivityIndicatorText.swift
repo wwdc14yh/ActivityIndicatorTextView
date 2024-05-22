@@ -15,6 +15,8 @@ public struct ActivityIndicatorText: Component {
     let dotsPosition: ActivityIndicatorTextView.DotPosition
     /// 間距
     let spacing: CGFloat
+    /// 是否忽略指示器 Size
+    let ignoresIndicatorContentSize: Bool
     /// 默認字體
     let font: ActivityIndicatorTextView.Font
     /// 默認顏色
@@ -25,6 +27,7 @@ public struct ActivityIndicatorText: Component {
         dotsProvider: ActivityIndicatorTextView.DotsProvider = .default(.case2),
         dotsPosition: ActivityIndicatorTextView.DotPosition = .rightBottom,
         spacing: CGFloat = 0,
+        ignoresIndicatorContentSize: Bool = false,
         interval: CGFloat = 0.2,
         font: ActivityIndicatorTextView.Font = ActivityIndicatorTextView.Font(),
         color: UIColor = .label
@@ -34,6 +37,7 @@ public struct ActivityIndicatorText: Component {
         self.dotsProvider = dotsProvider
         self.dotsPosition = dotsPosition
         self.spacing = spacing
+        self.ignoresIndicatorContentSize = ignoresIndicatorContentSize
         self.font = font
         self.color = color
     }
@@ -45,13 +49,15 @@ public struct ActivityIndicatorText: Component {
             dotsProvider: dotsProvider,
             dotsPosition: dotsPosition,
             spacing: spacing,
+            ignoresIndicatorContentSize: ignoresIndicatorContentSize,
             font: font,
             color: color,
             size: ActivityIndicatorTextView.calculateIntrinsicContentSize(
                 with: placeholder,
                 dotsProvider: dotsProvider,
                 font: font,
-                spacing: spacing
+                spacing: spacing, 
+                ignoresIndicatorContentSize: ignoresIndicatorContentSize
             ).bound(to: constraint)
         )
     }
@@ -68,6 +74,8 @@ public struct ActivityIndicatorTextRenderNode: RenderNode {
     let dotsPosition: ActivityIndicatorTextView.DotPosition
     /// 間距
     let spacing: CGFloat
+    /// 是否忽略指示器 Size
+    let ignoresIndicatorContentSize: Bool
     /// 默認字體
     let font: ActivityIndicatorTextView.Font
     /// 默認顏色
@@ -81,6 +89,7 @@ public struct ActivityIndicatorTextRenderNode: RenderNode {
             dotsProvider: dotsProvider,
             dotsPosition: dotsPosition,
             spacing: spacing,
+            ignoresIndicatorContentSize: ignoresIndicatorContentSize,
             interval: interval,
             font: font,
             color: color

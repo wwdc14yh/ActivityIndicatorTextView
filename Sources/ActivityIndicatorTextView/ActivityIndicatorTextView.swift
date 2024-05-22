@@ -37,7 +37,7 @@ public final class ActivityIndicatorTextView: UIView {
         }
     }
 
-    public static func calculateIntrinsicContentSize(with placeholder: Content, dotsProvider: DotsProvider, font: Font, spacing: CGFloat) -> CGSize {
+    public static func calculateIntrinsicContentSize(with placeholder: Content, dotsProvider: DotsProvider, font: Font, spacing: CGFloat, ignoresIndicatorContentSize: Bool) -> CGSize {
         var placeholderSize: CGSize {
             placeholder
                 .attributedString(font: font._fetchUIFont())
@@ -63,10 +63,10 @@ public final class ActivityIndicatorTextView: UIView {
                 }
                 .reduce(CGSize.zero) { $0.width > $1.width ? $0 : $1 }
         }
-        let sizes = [placeholderSize, dotsMaxSize]
+        let sizes = ignoresIndicatorContentSize ? [placeholderSize] :  [placeholderSize, dotsMaxSize]
         let maxHeight = sizes.map(\.height).reduce(0) { $0 > $1 ? $0 : $1 }
         let totalWidth = sizes.map(\.width).reduce(0) { $0 + $1 }
-        return CGSize(width: totalWidth + spacing, height: maxHeight)
+        return CGSize(width: totalWidth + (ignoresIndicatorContentSize ? 0 : spacing), height: maxHeight)
     }
 
     public enum DefaultDots: CaseIterable {
@@ -251,14 +251,21 @@ public final class ActivityIndicatorTextView: UIView {
             currentStep = step
         }
     }
+    
+    public var ignoresIndicatorContentSize: Bool = false {
+        didSet {
+            setNeedsLayout()
+            layoutIfNeeded()
+        }
+    }
 
     public var isRuning: Bool { _timerAnyCancellable != nil }
 
     public override var intrinsicContentSize: CGSize {
-        let sizes = [_placeholderSize, _dotsMaxSize]
+        let sizes = ignoresIndicatorContentSize ? [_placeholderSize] :  [_placeholderSize, _dotsMaxSize]
         let maxHeight = sizes.map(\.height).reduce(0) { $0 > $1 ? $0 : $1 }
         let totalWidth = sizes.map(\.width).reduce(0) { $0 + $1 }
-        return CGSize(width: totalWidth + spacing, height: maxHeight)
+        return CGSize(width: totalWidth + (ignoresIndicatorContentSize ? 0 : spacing), height: maxHeight)
     }
 
     private var _currentStep = 0
@@ -297,6 +304,7 @@ public final class ActivityIndicatorTextView: UIView {
         dotsProvider: DotsProvider = .default(.case2),
         dotsPosition: DotPosition = .rightBottom,
         spacing: CGFloat = 0,
+        ignoresIndicatorContentSize: Bool = false,
         interval: CGFloat = 0.2,
         font: Font = Font(),
         color: UIColor = .label
@@ -305,6 +313,7 @@ public final class ActivityIndicatorTextView: UIView {
         self.dotsProvider = dotsProvider
         self.dotsPosition = dotsPosition
         self.spacing = spacing
+        self.ignoresIndicatorContentSize = ignoresIndicatorContentSize
         self.interval = interval
         self.font = font
         self.color = color
@@ -336,6 +345,7 @@ public final class ActivityIndicatorTextView: UIView {
     public override func layoutSubviews() {
         super.layoutSubviews()
         let startOriginY: CGFloat
+        let startOriginX: CGFloat
         let subviews = dotsPosition.isLeft ? subviews.reversed() : subviews
         let subviewSizes = dotsPosition.isLeft ? [_dotsMaxSize, _placeholderSize] : [_placeholderSize, _dotsMaxSize]
         let fristSize = dotsPosition.isLeft ? _dotsMaxSize : _placeholderSize
@@ -348,7 +358,12 @@ public final class ActivityIndicatorTextView: UIView {
         case .leftTop, .rightTop:
             startOriginY = 0
         }
-        var offset: CGFloat = .zero
+        if dotsPosition.isLeft {
+            startOriginX = intrinsicContentSize.width - subviewSizes.reduce(CGFloat(0), { $0 + $1.width })
+        } else {
+            startOriginX = 0
+        }
+        var offset: CGFloat = startOriginX
         for index in subviews.indices {
             let view = subviews[index]
             let viewSize = subviewSizes[index]

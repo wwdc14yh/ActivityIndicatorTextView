@@ -32,6 +32,7 @@ class ViewController: UIViewController {
                 placeholder: .string("Loading"),
                 dotsProvider: .progress(start: nil, fill: " ", empty: " ", end: nil, lead: "🛫", reachLead: nil, count: 10),
                 spacing: 3,
+                ignoresIndicatorContentSize: true,
                 interval: 0.1,
                 font: .init(style: .regular),
                 color: .secondaryLabel
